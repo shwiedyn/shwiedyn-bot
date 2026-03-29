@@ -135,6 +135,22 @@ class WordleCog(commands.Cog):
 
         save_data(data)
 
+    @commands.command(name='remind')
+    async def remind(self, ctx, member: discord.Member = None):
+        reminders = [
+            "{mention} go do your wordle you bum",
+            "{mention} wordle. now. i'm not asking.",
+            "{mention} the wordle isn't gonna do itself",
+            "{mention} everyone's waiting on you for the wordle 🙄",
+            "{mention} bro forgot the wordle exists 💀",
+            "{mention} do your wordle or you're getting kicked /j",
+            "{mention} the wordle board is incomplete because of YOU",
+        ]
+        if member is None:
+            await ctx.send("Usage: `!remind @someone`")
+            return
+        await ctx.send(random.choice(reminders).format(mention=member.mention))
+
     @commands.command(name='leaderboard', aliases=['lb', 'wordle'])
     async def leaderboard(self, ctx):
         data = load_data()
