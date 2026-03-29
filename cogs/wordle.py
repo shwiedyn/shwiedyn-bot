@@ -87,17 +87,18 @@ def save_data(data):
         json.dump(data, f, indent=2)
 
 
-def get_month_key():
-    return datetime.now().strftime('%Y-%m')
+def get_week_key():
+    now = datetime.now()
+    return f"{now.strftime('%Y')}-W{now.strftime('%W')}"
 
 
-def build_leaderboard_embed(data, month):
-    month_data = data.get(month, {})
-    if not month_data:
+def build_leaderboard_embed(data, week):
+    week_data = data.get(week, {})
+    if not week_data:
         return None
 
     stats = []
-    for user_id, entry in month_data.items():
+    for user_id, entry in week_data.items():
         scores = entry['scores']
         fails = entry['fails']
         avg = sum(scores) / len(scores) if scores else None
@@ -110,9 +111,10 @@ def build_leaderboard_embed(data, month):
 
     stats.sort(key=lambda x: (x['avg'] is None, x['avg'] or 999, -x['wins']))
 
-    month_name = datetime.now().strftime('%B %Y')
+    now = datetime.now()
+    week_label = f"Week {now.strftime('%W')} — {now.strftime('%B %Y')}"
     embed = discord.Embed(
-        title=f"Wordle Leaderboard — {month_name}",
+        title=f"Wordle Leaderboard — {week_label}",
         color=0x538d4e
     )
 
@@ -124,7 +126,7 @@ def build_leaderboard_embed(data, month):
         lines.append(f"{prefix} **{s['name']}** — avg {avg_str} | {s['wins']}W / {s['fails']}L")
 
     embed.description = '\n'.join(lines)
-    embed.set_footer(text="Resets every month • /leaderboard")
+    embed.set_footer(text="Resets every week • /leaderboard")
     return embed
 
 
@@ -140,21 +142,40 @@ class WordleCog(commands.Cog):
             return
 
         pattern = r'Wordle\s+[\d,]+\s+([1-6X])/6'
-        match = re.search(pattern, message.content)
+
+        # Check plain text content first
+        text = message.content
+
+        # Also check embeds (for Wordle bots that post as embeds)
+        if not text and message.embeds:
+            for embed in message.embeds:
+                parts = [embed.title or '', embed.description or '']
+                for field in embed.fields:
+                    parts.append(field.value or '')
+                text = ' '.join(parts)
+                if re.search(pattern, text):
+                    break
+
+        match = re.search(pattern, text)
         if not match:
             return
 
         score_str = match.group(1)
         score = 'fail' if score_str == 'X' else int(score_str)
 
-        self.update_leaderboard(message.author, score)
+        # For embed messages from bots, try to find who the result belongs to
+        author = message.author
+        if message.author.bot and message.mentions:
+            author = message.mentions[0]
+
+        self.update_leaderboard(author, score)
 
         response = random.choice(RESPONSES[score])
         await message.reply(response)
 
     def update_leaderboard(self, user, score):
         data = load_data()
-        month = get_month_key()
+        month = get_week_key()
 
         if month not in data:
             data[month] = {}
@@ -216,7 +237,7 @@ class WordleCog(commands.Cog):
     @app_commands.command(name='leaderboard', description='Show the monthly Wordle leaderboard')
     async def leaderboard_slash(self, interaction: discord.Interaction):
         data = load_data()
-        month = get_month_key()
+        month = get_week_key()
         embed = build_leaderboard_embed(data, month)
         if embed is None:
             await interaction.response.send_message("No Wordle data this month yet.")
