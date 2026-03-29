@@ -14,15 +14,11 @@ intents.members = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 
-async def load_cogs():
-    for cog in ['cogs.wordle']:
-        await bot.load_extension(cog)
-    synced = await bot.tree.sync()
-    print(f'All cogs loaded. Synced {len(synced)} slash commands.')
-
 @bot.event
 async def on_ready():
     print(f'{bot.user} is online!')
+    synced = await bot.tree.sync()
+    print(f'Synced {len(synced)} slash commands.')
 
 
 async def health_check(request):
@@ -43,7 +39,8 @@ async def start_health_server():
 async def main():
     await start_health_server()
     async with bot:
-        await load_cogs()
+        for cog in ['cogs.wordle']:
+            await bot.load_extension(cog)
         await bot.start(os.getenv('DISCORD_TOKEN'))
 
 
