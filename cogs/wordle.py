@@ -141,35 +141,44 @@ class WordleCog(commands.Cog):
         if message.channel.name != WORDLE_CHANNEL:
             return
 
-        pattern = r'Wordle\s+[\d,]+\s+([1-6X])/6'
+        # Build full text from message + embeds
+        parts = [message.content or '']
+        for embed in message.embeds:
+            parts += [embed.title or '', embed.description or '']
+            for field in embed.fields:
+                parts.append(field.value or '')
+        text = '\n'.join(parts)
 
-        # Check plain text content first
-        text = message.content
+        # Format 1: Wordle bot summary — "4/6: <@userid>" per line
+        group_pattern = r'([1-6X])/6[^\n<]*<@!?(\d+)>'
+        group_matches = re.findall(group_pattern, text)
 
-        # Also check embeds (for Wordle bots that post as embeds)
-        if not text and message.embeds:
-            for embed in message.embeds:
-                parts = [embed.title or '', embed.description or '']
-                for field in embed.fields:
-                    parts.append(field.value or '')
-                text = ' '.join(parts)
-                if re.search(pattern, text):
-                    break
+        if group_matches:
+            # Build a lookup of mentioned users by ID
+            mention_map = {str(u.id): u for u in message.mentions}
+            replies = []
+            for score_str, user_id in group_matches:
+                user = mention_map.get(user_id)
+                if not user:
+                    continue
+                score = 'fail' if score_str == 'X' else int(score_str)
+                self.update_leaderboard(user, score)
+                response = random.choice(RESPONSES[score])
+                replies.append(f"{user.mention} {response}")
+            if replies:
+                await message.reply('\n'.join(replies))
+            return
 
-        match = re.search(pattern, text)
+        # Format 2: Standard Wordle share — "Wordle 1,234 3/6"
+        single_pattern = r'Wordle\s+[\d,]+\s+([1-6X])/6'
+        match = re.search(single_pattern, text)
         if not match:
             return
 
         score_str = match.group(1)
         score = 'fail' if score_str == 'X' else int(score_str)
-
-        # For embed messages from bots, try to find who the result belongs to
         author = message.author
-        if message.author.bot and message.mentions:
-            author = message.mentions[0]
-
         self.update_leaderboard(author, score)
-
         response = random.choice(RESPONSES[score])
         await message.reply(response)
 
