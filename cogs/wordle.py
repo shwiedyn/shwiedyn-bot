@@ -185,6 +185,25 @@ class WordleCog(commands.Cog):
             random.choice(REMINDERS).format(mention=member.mention)
         )
 
+    @app_commands.command(name='react', description='Send a dry reply to someone\'s Wordle score')
+    @app_commands.describe(
+        member='Who to reply to',
+        score='Their score (1-6 or 0 for fail)'
+    )
+    @app_commands.choices(score=[
+        app_commands.Choice(name='1/6', value=1),
+        app_commands.Choice(name='2/6', value=2),
+        app_commands.Choice(name='3/6', value=3),
+        app_commands.Choice(name='4/6', value=4),
+        app_commands.Choice(name='5/6', value=5),
+        app_commands.Choice(name='6/6', value=6),
+        app_commands.Choice(name='X/6 (fail)', value=0),
+    ])
+    async def react_slash(self, interaction: discord.Interaction, member: discord.Member, score: int):
+        key = 'fail' if score == 0 else score
+        response = random.choice(RESPONSES[key])
+        await interaction.response.send_message(f"{member.mention} {response}")
+
     @app_commands.command(name='leaderboard', description='Show the monthly Wordle leaderboard')
     async def leaderboard_slash(self, interaction: discord.Interaction):
         data = load_data()
