@@ -185,39 +185,43 @@ class WordleCog(commands.Cog):
             random.choice(REMINDERS).format(mention=member.mention)
         )
 
-    @app_commands.command(name='react', description='Send a dry reply to someone\'s Wordle score')
-    @app_commands.describe(member='Who to reply to', score='Their score')
-    @app_commands.choices(score=[
-        app_commands.Choice(name='1/6', value='1'),
-        app_commands.Choice(name='2/6', value='2'),
-        app_commands.Choice(name='3/6', value='3'),
-        app_commands.Choice(name='4/6', value='4'),
-        app_commands.Choice(name='5/6', value='5'),
-        app_commands.Choice(name='6/6', value='6'),
-        app_commands.Choice(name='X/6 (fail)', value='fail'),
-    ])
-    async def react_slash(self, interaction: discord.Interaction, member: discord.Member, score: str):
-        try:
-            key = 'fail' if score == 'fail' else int(score)
-            response = random.choice(RESPONSES[key])
-            await interaction.response.send_message(f"{member.mention} {response}")
-        except Exception as e:
-            print(f'react error: {e}')
-            await interaction.response.send_message("something went wrong", ephemeral=True)
+    @app_commands.command(name='got1', description='React to a 1/6')
+    async def got1(self, interaction: discord.Interaction, member: discord.Member):
+        await interaction.response.send_message(f"{member.mention} {random.choice(RESPONSES[1])}")
+
+    @app_commands.command(name='got2', description='React to a 2/6')
+    async def got2(self, interaction: discord.Interaction, member: discord.Member):
+        await interaction.response.send_message(f"{member.mention} {random.choice(RESPONSES[2])}")
+
+    @app_commands.command(name='got3', description='React to a 3/6')
+    async def got3(self, interaction: discord.Interaction, member: discord.Member):
+        await interaction.response.send_message(f"{member.mention} {random.choice(RESPONSES[3])}")
+
+    @app_commands.command(name='got4', description='React to a 4/6')
+    async def got4(self, interaction: discord.Interaction, member: discord.Member):
+        await interaction.response.send_message(f"{member.mention} {random.choice(RESPONSES[4])}")
+
+    @app_commands.command(name='got5', description='React to a 5/6')
+    async def got5(self, interaction: discord.Interaction, member: discord.Member):
+        await interaction.response.send_message(f"{member.mention} {random.choice(RESPONSES[5])}")
+
+    @app_commands.command(name='got6', description='React to a 6/6')
+    async def got6(self, interaction: discord.Interaction, member: discord.Member):
+        await interaction.response.send_message(f"{member.mention} {random.choice(RESPONSES[6])}")
+
+    @app_commands.command(name='gotfail', description='React to a failed Wordle')
+    async def gotfail(self, interaction: discord.Interaction, member: discord.Member):
+        await interaction.response.send_message(f"{member.mention} {random.choice(RESPONSES['fail'])}")
 
     @app_commands.command(name='leaderboard', description='Show the monthly Wordle leaderboard')
     async def leaderboard_slash(self, interaction: discord.Interaction):
-        try:
-            data = load_data()
-            month = get_month_key()
-            embed = build_leaderboard_embed(data, month)
-            if embed is None:
-                await interaction.response.send_message("No Wordle data this month yet.")
-                return
-            await interaction.response.send_message(embed=embed)
-        except Exception as e:
-            print(f'leaderboard error: {e}')
-            await interaction.response.send_message("something went wrong", ephemeral=True)
+        data = load_data()
+        month = get_month_key()
+        embed = build_leaderboard_embed(data, month)
+        if embed is None:
+            await interaction.response.send_message("No Wordle data this month yet.")
+            return
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot):
