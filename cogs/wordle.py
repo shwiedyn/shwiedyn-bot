@@ -64,6 +64,30 @@ RESPONSES = {
     ],
 }
 
+ROASTS = [
+    "genuinely what are you doing.",
+    "i've seen better.",
+    "you're trying so hard and it shows.",
+    "the confidence is impressive given the circumstances.",
+    "not your best moment.",
+    "we don't have to talk about it.",
+    "i'm not mad, just disappointed.",
+    "respectfully, no.",
+    "bold of you to let people see that.",
+    "i'd say keep trying but.",
+]
+
+COMPLIMENTS = [
+    "you on the other hand? immaculate.",
+    "meanwhile {mention} is doing great as always.",
+    "at least {mention} has it together.",
+    "{mention} would never.",
+    "good thing {mention} exists to balance things out.",
+    "not everyone can be {mention} i guess.",
+    "{mention} is built different honestly.",
+    "the real W is {mention} for having to witness this.",
+]
+
 REMINDERS = [
     "{mention} wordle.",
     "{mention} you haven't done your wordle.",
@@ -208,6 +232,12 @@ class WordleCog(commands.Cog):
         save_data(data)
 
     # --- Slash commands ---
+
+    @app_commands.command(name='roast', description='Roast someone')
+    async def roast(self, interaction: discord.Interaction, member: discord.Member):
+        roast = random.choice(ROASTS)
+        compliment = random.choice(COMPLIMENTS).format(mention=interaction.user.mention)
+        await interaction.response.send_message(f"{member.mention} {roast}\n{compliment}")
 
     @app_commands.command(name='remind', description='Tell someone to go do their Wordle')
     async def remind_slash(self, interaction: discord.Interaction, member: discord.Member):
