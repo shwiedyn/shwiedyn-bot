@@ -235,9 +235,19 @@ class WordleCog(commands.Cog):
 
     @app_commands.command(name='roast', description='Roast someone')
     async def roast(self, interaction: discord.Interaction, member: discord.Member):
+        if interaction.user.id != 497738768791371806:
+            await interaction.response.send_message("you can't use this.", ephemeral=True)
+            return
         roast = random.choice(ROASTS)
         compliment = random.choice(COMPLIMENTS).format(mention=interaction.user.mention)
         await interaction.response.send_message(f"{member.mention} {roast}\n{compliment}")
+
+    @app_commands.command(name='fireworks', description='...')
+    async def fireworks(self, interaction: discord.Interaction):
+        if interaction.user.id != 497738768791371806:
+            await interaction.response.send_message("you can't use this.", ephemeral=True)
+            return
+        await interaction.response.send_message(f"<@745307011964469419> imagine eating fireworks.. could never be me")
 
     @app_commands.command(name='remind', description='Tell someone to go do their Wordle')
     async def remind_slash(self, interaction: discord.Interaction, member: discord.Member):
