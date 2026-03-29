@@ -14,11 +14,15 @@ intents.members = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 
+GUILD_ID = int(os.getenv('GUILD_ID', 0))
+
 @bot.event
 async def on_ready():
     print(f'{bot.user} is online!')
-    synced = await bot.tree.sync()
-    print(f'Synced {len(synced)} slash commands.')
+    guild = discord.Object(id=GUILD_ID)
+    bot.tree.copy_global_to(guild=guild)
+    synced = await bot.tree.sync(guild=guild)
+    print(f'Synced {len(synced)} slash commands to guild.')
 
 
 async def health_check(request):
