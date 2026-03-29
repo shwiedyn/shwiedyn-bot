@@ -186,33 +186,38 @@ class WordleCog(commands.Cog):
         )
 
     @app_commands.command(name='react', description='Send a dry reply to someone\'s Wordle score')
-    @app_commands.describe(
-        member='Who to reply to',
-        score='Their score (1-6 or 0 for fail)'
-    )
+    @app_commands.describe(member='Who to reply to', score='Their score')
     @app_commands.choices(score=[
-        app_commands.Choice(name='1/6', value=1),
-        app_commands.Choice(name='2/6', value=2),
-        app_commands.Choice(name='3/6', value=3),
-        app_commands.Choice(name='4/6', value=4),
-        app_commands.Choice(name='5/6', value=5),
-        app_commands.Choice(name='6/6', value=6),
-        app_commands.Choice(name='X/6 (fail)', value=0),
+        app_commands.Choice(name='1/6', value='1'),
+        app_commands.Choice(name='2/6', value='2'),
+        app_commands.Choice(name='3/6', value='3'),
+        app_commands.Choice(name='4/6', value='4'),
+        app_commands.Choice(name='5/6', value='5'),
+        app_commands.Choice(name='6/6', value='6'),
+        app_commands.Choice(name='X/6 (fail)', value='fail'),
     ])
-    async def react_slash(self, interaction: discord.Interaction, member: discord.Member, score: int):
-        key = 'fail' if score == 0 else score
-        response = random.choice(RESPONSES[key])
-        await interaction.response.send_message(f"{member.mention} {response}")
+    async def react_slash(self, interaction: discord.Interaction, member: discord.Member, score: str):
+        try:
+            key = 'fail' if score == 'fail' else int(score)
+            response = random.choice(RESPONSES[key])
+            await interaction.response.send_message(f"{member.mention} {response}")
+        except Exception as e:
+            print(f'react error: {e}')
+            await interaction.response.send_message("something went wrong", ephemeral=True)
 
     @app_commands.command(name='leaderboard', description='Show the monthly Wordle leaderboard')
     async def leaderboard_slash(self, interaction: discord.Interaction):
-        data = load_data()
-        month = get_month_key()
-        embed = build_leaderboard_embed(data, month)
-        if embed is None:
-            await interaction.response.send_message("No Wordle data this month yet — go share your results!")
-            return
-        await interaction.response.send_message(embed=embed)
+        try:
+            data = load_data()
+            month = get_month_key()
+            embed = build_leaderboard_embed(data, month)
+            if embed is None:
+                await interaction.response.send_message("No Wordle data this month yet.")
+                return
+            await interaction.response.send_message(embed=embed)
+        except Exception as e:
+            print(f'leaderboard error: {e}')
+            await interaction.response.send_message("something went wrong", ephemeral=True)
 
 
 async def setup(bot):
