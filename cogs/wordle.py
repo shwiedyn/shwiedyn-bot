@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import re
 import json
@@ -68,6 +69,16 @@ RESPONSES = {
     ],
 }
 
+REMINDERS = [
+    "{mention} go do your wordle you bum",
+    "{mention} wordle. now. i'm not asking.",
+    "{mention} the wordle isn't gonna do itself",
+    "{mention} everyone's waiting on you for the wordle 🙄",
+    "{mention} bro forgot the wordle exists 💀",
+    "{mention} do your wordle or you're getting kicked /j",
+    "{mention} the wordle board is incomplete because of YOU",
+]
+
 
 def load_data():
     if not os.path.exists(DATA_FILE):
@@ -84,6 +95,43 @@ def save_data(data):
 
 def get_month_key():
     return datetime.now().strftime('%Y-%m')
+
+
+def build_leaderboard_embed(data, month):
+    month_data = data.get(month, {})
+    if not month_data:
+        return None
+
+    stats = []
+    for user_id, entry in month_data.items():
+        scores = entry['scores']
+        fails = entry['fails']
+        avg = sum(scores) / len(scores) if scores else None
+        stats.append({
+            'name': entry['name'],
+            'avg': avg,
+            'wins': len(scores),
+            'fails': fails,
+        })
+
+    stats.sort(key=lambda x: (x['avg'] is None, x['avg'] or 999, -x['wins']))
+
+    month_name = datetime.now().strftime('%B %Y')
+    embed = discord.Embed(
+        title=f"Wordle Leaderboard — {month_name}",
+        color=0x538d4e
+    )
+
+    medals = ['🥇', '🥈', '🥉']
+    lines = []
+    for i, s in enumerate(stats):
+        prefix = medals[i] if i < 3 else f"{i + 1}."
+        avg_str = f"{s['avg']:.2f}" if s['avg'] is not None else "—"
+        lines.append(f"{prefix} **{s['name']}** — avg {avg_str} | {s['wins']}W / {s['fails']}L")
+
+    embed.description = '\n'.join(lines)
+    embed.set_footer(text="Resets every month • /leaderboard")
+    return embed
 
 
 class WordleCog(commands.Cog):
@@ -135,65 +183,23 @@ class WordleCog(commands.Cog):
 
         save_data(data)
 
-    @commands.command(name='remind')
-    async def remind(self, ctx, member: discord.Member = None):
-        reminders = [
-            "{mention} go do your wordle you bum",
-            "{mention} wordle. now. i'm not asking.",
-            "{mention} the wordle isn't gonna do itself",
-            "{mention} everyone's waiting on you for the wordle 🙄",
-            "{mention} bro forgot the wordle exists 💀",
-            "{mention} do your wordle or you're getting kicked /j",
-            "{mention} the wordle board is incomplete because of YOU",
-        ]
-        if member is None:
-            await ctx.send("Usage: `!remind @someone`")
-            return
-        await ctx.send(random.choice(reminders).format(mention=member.mention))
+    # --- Slash commands ---
 
-    @commands.command(name='leaderboard', aliases=['lb', 'wordle'])
-    async def leaderboard(self, ctx):
-        data = load_data()
-        month = get_month_key()
-
-        if month not in data or not data[month]:
-            await ctx.send("No Wordle data this month yet — go share your results!")
-            return
-
-        month_data = data[month]
-
-        stats = []
-        for user_id, entry in month_data.items():
-            scores = entry['scores']
-            fails = entry['fails']
-            avg = sum(scores) / len(scores) if scores else None
-            stats.append({
-                'name': entry['name'],
-                'avg': avg,
-                'wins': len(scores),
-                'fails': fails,
-            })
-
-        stats.sort(key=lambda x: (x['avg'] is None, x['avg'] or 999, -x['wins']))
-
-        month_name = datetime.now().strftime('%B %Y')
-        embed = discord.Embed(
-            title=f"Wordle Leaderboard — {month_name}",
-            color=0x538d4e
+    @app_commands.command(name='remind', description='Tell someone to go do their Wordle')
+    async def remind_slash(self, interaction: discord.Interaction, member: discord.Member):
+        await interaction.response.send_message(
+            random.choice(REMINDERS).format(mention=member.mention)
         )
 
-        medals = ['🥇', '🥈', '🥉']
-        lines = []
-        for i, s in enumerate(stats):
-            prefix = medals[i] if i < 3 else f"{i + 1}."
-            avg_str = f"{s['avg']:.2f}" if s['avg'] is not None else "—"
-            lines.append(
-                f"{prefix} **{s['name']}** — avg {avg_str} | {s['wins']}W / {s['fails']}L"
-            )
-
-        embed.description = '\n'.join(lines)
-        embed.set_footer(text="Resets every month • !leaderboard or !lb")
-        await ctx.send(embed=embed)
+    @app_commands.command(name='leaderboard', description='Show the monthly Wordle leaderboard')
+    async def leaderboard_slash(self, interaction: discord.Interaction):
+        data = load_data()
+        month = get_month_key()
+        embed = build_leaderboard_embed(data, month)
+        if embed is None:
+            await interaction.response.send_message("No Wordle data this month yet — go share your results!")
+            return
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot):

@@ -19,7 +19,8 @@ async def on_ready():
     print(f'{bot.user} is online!')
     for cog in ['cogs.wordle']:
         await bot.load_extension(cog)
-    print('All cogs loaded.')
+    synced = await bot.tree.sync()
+    print(f'All cogs loaded. Synced {len(synced)} slash commands.')
 
 
 async def health_check(request):
