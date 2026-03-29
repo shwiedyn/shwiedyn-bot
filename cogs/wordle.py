@@ -134,7 +134,7 @@ class WordleCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot:
+        if message.author == self.bot.user:
             return
         if message.channel.name != WORDLE_CHANNEL:
             return
